@@ -137,6 +137,7 @@ export interface CheckoutProduct {
   product_slug: string;
   type: PurchaseType;
   quantity: number;
+  donation_amount?: number;
   server_selection?: number;
   custom_fields?: Record<string, string | number>;
 }
