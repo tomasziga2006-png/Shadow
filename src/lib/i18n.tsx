@@ -357,7 +357,7 @@ const en: Dict = {
   'footer.secure_payment': 'Secure payment',
   'footer.secure_payment_desc': 'All payments are processed securely via Tip4Serv.',
   'footer.rights_reserved': 'All rights reserved.',
-  'footer.default_description': 'The official store for your ARK: Survival Ascended products. Instant delivery to your server.',
+  'footer.default_description': 'Premium FiveM Packages & Custom Assets',
 
   'hero.badge_fallback': 'Instant delivery to your server',
   'hero.welcome_prefix': 'Welcome to',
@@ -413,7 +413,7 @@ const en: Dict = {
 
   'products.page.title_all': 'All products',
   'products.page.subtitle_category': 'Browse products in the {name} category',
-  'products.page.subtitle_all': 'Discover our full catalog for ARK Ascended',
+  'products.page.subtitle_all': 'Premium FiveM Packages & Assets',
   'products.page.found_singular': 'product found',
   'products.page.found_plural': 'products found',
   'products.page.sidebar_categories': 'Categories',
