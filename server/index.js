@@ -162,6 +162,72 @@ app.all('/api/tip4serv-proxy', async (req, res) => {
     return jsonError(res, 403, 'Checkout is disabled outside production.');
   }
 
+  // Dummy store and product for staging only
+  if (process.env.RAILWAY_ENVIRONMENT_NAME === 'staging') {
+    const category = {
+      id: 999,
+      name: 'Custom Payments',
+      slug: 'custom-payments',
+      hide: false,
+      main_redirect: false,
+      description: 'Test products',
+    };
+
+    const product = {
+      id: 999,
+      name: 'Santino Custom Payment (TEST)',
+      slug: 'santino-custom-payment-test',
+      status: true,
+      price: 1,
+      donation: true,
+      subscription: false,
+      featured: true,
+      category,
+      created_date: 0,
+      description: 'Test only. No real payments.',
+      custom_fields: [],
+    };
+
+    switch (req.query.action) {
+      case 'store':
+        return res.json({
+          id: 999,
+          owner: 0,
+          title: 'SantinoCustomsV (TEST)',
+          domain: 'santino-test',
+          currency: 'GBP',
+          description: 'Testing custom payments',
+          logo: '',
+          timezone: 'Europe/London',
+          color: '#0e0e0e',
+        });
+
+      case 'products':
+        return res.json({
+          products: [product],
+          product_count: 1,
+        });
+
+      case 'categories':
+        return res.json({
+          categories: [category],
+          category_count: 1,
+        });
+
+      case 'product':
+        return req.query.slug === product.slug ||
+          req.query.id === String(product.id)
+          ? res.json(product)
+          : jsonError(res, 404, 'Test product not found');
+
+      case 'checkout-identifiers':
+        return res.json([]);
+
+      default:
+        return jsonError(res, 400, 'Staging test only');
+    }
+  }
+
   try {
     const apiKey = await loadApiKey();
     if (!apiKey) {
