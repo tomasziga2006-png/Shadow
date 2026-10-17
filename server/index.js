@@ -154,6 +154,14 @@ app.put('/api/admin/settings', requireAdmin, async (req, res) => {
 });
 
 app.all('/api/tip4serv-proxy', async (req, res) => {
+  
+  if (
+    req.query.action === 'checkout' &&
+    process.env.RAILWAY_ENVIRONMENT_NAME !== 'production'
+  ) {
+    return jsonError(res, 403, 'Checkout is disabled outside production.');
+  }
+
   try {
     const apiKey = await loadApiKey();
     if (!apiKey) {
