@@ -505,6 +505,18 @@ export default function ProductDetailPage() {
                       return;
                     }
 
+const missingField = product.custom_fields?.find(
+  (field) =>
+    Boolean(field.required) &&
+    !field.parent &&
+    String(customFieldValues[String(field.id)] ?? '').trim() === ''
+);
+
+if (missingField) {
+  addToast(`Please fill in ${missingField.name} before adding to cart.`, 'error');
+  return;
+}
+
 if (product.donation) {
   const amount = Number(donationAmount);
 
