@@ -121,10 +121,15 @@ export default function CheckoutPage() {
     window.addEventListener('message', onMessage);
   }, [discordClientId, addToast, t]);
 
-  const cartTotal = items.reduce((sum, item) => {
-    const extras = computeExtrasPrice(item.product.custom_fields, item.customFieldValues);
-    return sum + (item.product.price + extras) * item.quantity;
-  }, 0);
+ 
+const cartTotal = items.reduce((sum, item) => {
+  const extras = computeExtrasPrice(item.product.custom_fields, item.customFieldValues);
+  const basePrice = item.product.donation
+    ? (item.donationAmount ?? item.product.price)
+    : item.product.price;
+  return sum + (basePrice + extras) * item.quantity;
+}, 0);
+
 
   useEffect(() => {
     if (items.length === 0) return;
@@ -260,6 +265,9 @@ export default function CheckoutPage() {
           product_slug: item.product.slug,
           type: item.purchaseType || 'addtocart',
           quantity: item.quantity,
+          
+donation_amount: item.product.donation ? item.donationAmount : undefined,
+
         };
 
         if (item.selectedServer !== undefined) {
@@ -429,7 +437,11 @@ export default function CheckoutPage() {
               <div className="space-y-3">
                 {items.map((item) => {
                   const extras = computeExtrasPrice(item.product.custom_fields, item.customFieldValues);
-                  const unitPrice = item.product.price + extras;
+                  
+const unitPrice = (item.product.donation
+  ? (item.donationAmount ?? item.product.price)
+  : item.product.price) + extras;
+
                   const lineTotal = unitPrice * item.quantity;
                   const img = item.product.image || item.product.gallery?.[0];
 
@@ -517,7 +529,7 @@ export default function CheckoutPage() {
                             </div>
                             {extras > 0 && (
                               <p className="text-xs text-volcanic-400">
-                                {t('common.base_price_prefix')} {formatMoney(item.product.price, currency)} {t('common.plus_options')} {formatMoney(extras, currency)}
+                                {t('common.base_price_prefix')} {formatMoney(unitPrice - extras, currency)} {t('common.plus_options')} {formatMoney(extras, currency)}
                               </p>
                             )}
                           </div>
@@ -640,7 +652,12 @@ export default function CheckoutPage() {
                 <div className="space-y-3 text-sm">
                   {items.map((item) => {
                     const extras = computeExtrasPrice(item.product.custom_fields, item.customFieldValues);
-                    const lineTotal = (item.product.price + extras) * item.quantity;
+                   
+const basePrice = item.product.donation
+  ? (item.donationAmount ?? item.product.price)
+  : item.product.price;
+const lineTotal = (basePrice + extras) * item.quantity;
+
                     return (
                       <div key={item.id} className="space-y-1">
                         <div className="flex items-center justify-between gap-2">
@@ -656,7 +673,9 @@ export default function CheckoutPage() {
                         </div>
                         {extras > 0 && (
                           <div className="text-xs text-volcanic-500 pl-2">
-                            {t('common.base_short')} {formatMoney(item.product.price, currency)} {t('common.plus_options')} {formatMoney(extras, currency)}
+                            {t('common.base_short')} {
+formatMoney(basePrice, currency)
+} {t('common.plus_options')} {formatMoney(extras, currency)}
                           </div>
                         )}
                       </div>
