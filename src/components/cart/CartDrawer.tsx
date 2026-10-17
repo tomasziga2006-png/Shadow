@@ -43,10 +43,15 @@ export default function CartDrawer() {
 
   if (!isOpen) return null;
 
-  const cartTotal = items.reduce((sum, item) => {
-    const extras = computeExtrasPrice(item.product.custom_fields, item.customFieldValues);
-    return sum + (item.product.price + extras) * item.quantity;
-  }, 0);
+  
+const cartTotal = items.reduce((sum, item) => {
+  const extras = computeExtrasPrice(item.product.custom_fields, item.customFieldValues);
+  const basePrice = item.product.donation
+    ? (item.donationAmount ?? item.product.price)
+    : item.product.price;
+  return sum + (basePrice + extras) * item.quantity;
+}, 0);
+
 
   return (
     <>
@@ -117,7 +122,13 @@ export default function CartDrawer() {
                 <div className="p-4 space-y-3">
                   {items.map((item, idx) => {
                     const extras = computeExtrasPrice(item.product.custom_fields, item.customFieldValues);
-                    const unitPrice = item.product.price + extras;
+                    
+const unitPrice = (
+  item.product.donation
+    ? (item.donationAmount ?? item.product.price)
+    : item.product.price
+) + extras;
+
                     const img = item.product.image || item.product.gallery?.[0];
 
                     return (
@@ -173,7 +184,9 @@ export default function CartDrawer() {
                               {formatMoney(unitPrice, currency)}
                               {extras > 0 && (
                                 <span className="text-xs text-volcanic-500 font-normal ml-1">
-                                  ({t('cart.price.base_label')} {formatMoney(item.product.price, currency)} + {t('cart.price.options_label')} {formatMoney(extras, currency)})
+                                  ({t('cart.price.base_label')} {
+formatMoney(unitPrice - extras, currency)
+} + {t('cart.price.options_label')} {formatMoney(extras, currency)})
                                 </span>
                               )}
                             </p>
