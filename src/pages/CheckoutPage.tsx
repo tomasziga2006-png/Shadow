@@ -230,6 +230,29 @@ const cartTotal = items.reduce((sum, item) => {
         return selectedOpt ? String(selectedOpt.id) === String(field.parent.optionId) : false;
       };
 
+      const missingField = allFields.find((field) => {
+        if (!field.required || !isFieldVisible(field.id)) return false;
+
+        const value = item.customFieldValues[String(field.id)];
+
+        if (field.type === 'checkbox') {
+          return value !== 1 && value !== '1' && value !== 'true';
+        }
+
+        return value === undefined ||
+          value === null ||
+          String(value).trim() === '';
+      });
+
+      if (missingField) {
+        addToast(
+          `Please complete ${missingField.name} for ${item.product.name}.`,
+          'error'
+        );
+        return;
+      }
+
+
       for (const rule of rules) {
         if (rule.type !== 'number_limit') continue;
         const visibleFields = rule.fields.filter(isFieldVisible);
