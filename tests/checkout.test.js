@@ -137,6 +137,16 @@ describe('checkout API', { concurrency: false }, () => {
     });
   }
 
+  it('accepts Tip4Serv product ID 0', async () => {
+    product.id = 0;
+    const body = validBody();
+    body.products[0].product_id = 0;
+    const result = await request(body);
+    assert.equal(result.status, 200);
+    const checkout = upstreamCalls.find(({ options }) => options.method === 'POST');
+    assert.equal(JSON.parse(checkout.options.body).products[0].product_id, 0);
+  });
+
   it('uses the minimum from upstream product metadata', async () => {
     product.min_donation = 40;
     assert.equal((await request()).status, 400);

@@ -309,7 +309,7 @@ custom_fields: [
           }
           if (
             typeof item.product_slug !== 'string' || !item.product_slug ||
-            !Number.isSafeInteger(item.product_id) || item.product_id < 1 ||
+            !Number.isSafeInteger(item.product_id) || item.product_id < 0 ||
             !Number.isSafeInteger(item.quantity) || item.quantity < 1 || item.quantity > 100 ||
             !['addtocart', 'subscribe'].includes(item.type)
           ) {
