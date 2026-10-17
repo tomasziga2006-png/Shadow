@@ -273,7 +273,14 @@ export default function ProductDetailPage() {
             <div className="space-y-2">
               <div className="flex items-baseline gap-3">
                 <span className="text-4xl font-bold text-heading">
-                  {formatMoney(product.price + extrasPrice, currency)}
+                  
+{formatMoney(
+  (product.donation && Number(donationAmount) >= product.price
+    ? Number(donationAmount)
+    : product.price) + extrasPrice,
+  currency
+)}
+
                 </span>
                 {product.old_price && (
                   <span className="text-xl text-volcanic-500 line-through">
