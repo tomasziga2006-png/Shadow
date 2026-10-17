@@ -204,6 +204,28 @@ app.all('/api/tip4serv-proxy', async (req, res) => {
       case 'checkout': {
         if (req.method !== 'POST') return jsonError(res, 405, 'POST method required for checkout');
         if (!req.query.store) return jsonError(res, 400, 'store parameter is required');
+        
+const checkoutProducts = req.body?.products;
+
+if (!Array.isArray(checkoutProducts) || checkoutProducts.length === 0) {
+  return jsonError(res, 400, 'Your cart is empty or invalid.');
+}
+
+for (const item of checkoutProducts) {
+  if (item.donation_amount === undefined) continue;
+
+  const amount = item.donation_amount;
+
+  if (
+    typeof amount !== 'number' ||
+    !Number.isFinite(amount) ||
+    amount < 1 ||
+    Math.abs(amount * 100 - Math.round(amount * 100)) > 0.000001
+  ) {
+    return jsonError(res, 400, 'Invalid custom payment amount.');
+  }
+}
+
         data = await postTip4Serv(`/store/checkout?store=${req.query.store}`, apiKey, req.body);
         break;
       }
