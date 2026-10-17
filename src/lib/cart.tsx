@@ -8,6 +8,7 @@ export interface CartItem {
   customFieldValues: Record<string, string | number>;
   selectedServer?: number;
   purchaseType: PurchaseType;
+  donationAmount?: number;
 }
 
 export type AddItemResult =
@@ -19,7 +20,7 @@ interface CartContextValue {
   items: CartItem[];
   itemCount: number;
   hasSubscription: boolean;
-  addItem: (product: Product, customFieldValues: Record<string, string | number>, selectedServer?: number, purchaseType?: PurchaseType, quantity?: number) => AddItemResult;
+  addItem: (product: Product, customFieldValues: Record<string, string | number>, selectedServer?: number, purchaseType?: PurchaseType, quantity?: number, donationAmount?: number) => AddItemResult;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   updateCustomFields: (id: string, values: Record<string, string | number>) => void;
@@ -61,7 +62,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     saveCart(items);
   }, [items]);
 
-  const addItem = useCallback((product: Product, customFieldValues: Record<string, string | number>, selectedServer?: number, purchaseType?: PurchaseType, quantity?: number): AddItemResult => {
+const addItem = useCallback((product: Product, customFieldValues: Record<string, string | number>, selectedServer?: number, purchaseType?: PurchaseType, quantity?: number, donationAmount?: number): AddItemResult => {
     const isSubscription = purchaseType === 'subscribe';
     const newItem: CartItem = {
       id: generateId(),
@@ -70,6 +71,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       customFieldValues,
       selectedServer,
       purchaseType: purchaseType || 'addtocart',
+      donationAmount,
     };
 
     let result: AddItemResult = { ok: true, replaced: false };
