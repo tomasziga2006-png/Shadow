@@ -73,7 +73,12 @@ npm run dev
 ```bash
 npm run dev
 npm run dev:api
+npm test
 npm run build
 npm run typecheck
 npm run lint
 ```
+
+`npm test` exercises the checkout API with mocked upstream requests and a dummy
+credential. It makes no real payments and does not need MySQL. Non-production
+environments, including Railway staging, continue to reject checkout with HTTP 403.

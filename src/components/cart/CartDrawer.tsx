@@ -203,29 +203,33 @@ formatMoney(unitPrice - extras, currency)
                           </button>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                            disabled={item.quantity <= 1}
-                            className="w-7 h-7 flex items-center justify-center rounded-md bg-volcanic-800 text-volcanic-300 hover:text-heading hover:bg-volcanic-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
-                          >
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <span className="w-8 text-center text-sm text-heading font-medium tabular-nums">
-                            {item.quantity}
-                          </span>
-                          <button
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            className="w-7 h-7 flex items-center justify-center rounded-md bg-volcanic-800 text-volcanic-300 hover:text-heading hover:bg-volcanic-700 transition-all duration-200"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
-                          {item.quantity > 1 && (
-                            <span className="text-xs text-volcanic-500 ml-auto">
-                              {t('common.subtotal')} {formatMoney(unitPrice * item.quantity, currency)}
+                        {!item.product.donation ? (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              disabled={item.quantity <= 1}
+                              className="w-7 h-7 flex items-center justify-center rounded-md bg-volcanic-800 text-volcanic-300 hover:text-heading hover:bg-volcanic-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="w-8 text-center text-sm text-heading font-medium tabular-nums">
+                              {item.quantity}
                             </span>
-                          )}
-                        </div>
+                            <button
+                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              className="w-7 h-7 flex items-center justify-center rounded-md bg-volcanic-800 text-volcanic-300 hover:text-heading hover:bg-volcanic-700 transition-all duration-200"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                            {item.quantity > 1 && (
+                              <span className="text-xs text-volcanic-500 ml-auto">
+                                {t('common.subtotal')} {formatMoney(unitPrice * item.quantity, currency)}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-volcanic-400">Quantity: 1</div>
+                        )}
 
                         {item.product.custom_fields && item.product.custom_fields.length > 0 && (
                           <div>

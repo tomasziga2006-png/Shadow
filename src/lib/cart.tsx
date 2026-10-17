@@ -42,7 +42,9 @@ function loadCart(): CartItem[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
-    return JSON.parse(raw);
+    const cart = JSON.parse(raw);
+    if (!Array.isArray(cart)) return [];
+    return cart.map((item) => item?.product?.donation ? { ...item, quantity: 1 } : item);
   } catch {
     return [];
   }
@@ -67,7 +69,7 @@ const addItem = useCallback((product: Product, customFieldValues: Record<string,
     const newItem: CartItem = {
       id: generateId(),
       product,
-      quantity: quantity || 1,
+      quantity: product.donation ? 1 : (quantity || 1),
       customFieldValues,
       selectedServer,
       purchaseType: purchaseType || 'addtocart',
@@ -112,7 +114,7 @@ const addItem = useCallback((product: Product, customFieldValues: Record<string,
   const updateQuantity = useCallback((id: string, quantity: number) => {
     if (quantity < 1) return;
     setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, quantity } : item))
+      prev.map((item) => (item.id === id ? { ...item, quantity: item.product.donation ? 1 : quantity } : item))
     );
   }, []);
 

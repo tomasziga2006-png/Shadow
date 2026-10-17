@@ -143,6 +143,8 @@ export default function ProductDetailPage() {
     );
   }
 
+  const minimumDonation = Math.max(1, Number(product.min_donation ?? product.price));
+  const purchaseQuantity = product.donation ? 1 : quantity;
   const images = product.gallery?.length
     ? product.gallery
     : product.image
@@ -275,7 +277,7 @@ export default function ProductDetailPage() {
                 <span className="text-4xl font-bold text-heading">
                   
 {formatMoney(
-  (product.donation && Number(donationAmount) >= product.price
+  (product.donation && Number(donationAmount) >= minimumDonation
     ? Number(donationAmount)
     : product.price) + extrasPrice,
   currency
@@ -391,7 +393,7 @@ export default function ProductDetailPage() {
     </label>
     <input
       type="number"
-      min={product.price}
+      min={minimumDonation}
       step="0.01"
       value={donationAmount}
       onChange={(e) => setDonationAmount(e.target.value)}
@@ -483,30 +485,32 @@ export default function ProductDetailPage() {
               </div>
             ) : (
               <div className="flex items-stretch gap-3">
-                <div className="flex items-center border-2 border-volcanic-700/60 rounded-xl overflow-hidden bg-volcanic-800/30 shrink-0">
-                  <button
-                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    disabled={quantity <= 1}
-                    className="w-11 h-full flex items-center justify-center text-volcanic-300 hover:text-heading hover:bg-volcanic-700/40 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <span className="w-10 text-center text-heading font-semibold text-base tabular-nums select-none">
-                    {quantity}
-                  </span>
-                  <button
-                    onClick={() => setQuantity((q) => Math.min(maxQuantity, q + 1))}
-                    disabled={stockTracked && quantity >= maxQuantity}
-                    className="w-11 h-full flex items-center justify-center text-volcanic-300 hover:text-heading hover:bg-volcanic-700/40 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
+                {!product.donation && (
+                  <div className="flex items-center border-2 border-volcanic-700/60 rounded-xl overflow-hidden bg-volcanic-800/30 shrink-0">
+                    <button
+                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                      disabled={quantity <= 1}
+                      className="w-11 h-full flex items-center justify-center text-volcanic-300 hover:text-heading hover:bg-volcanic-700/40 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <span className="w-10 text-center text-heading font-semibold text-base tabular-nums select-none">
+                      {quantity}
+                    </span>
+                    <button
+                      onClick={() => setQuantity((q) => Math.min(maxQuantity, q + 1))}
+                      disabled={stockTracked && quantity >= maxQuantity}
+                      className="w-11 h-full flex items-center justify-center text-volcanic-300 hover:text-heading hover:bg-volcanic-700/40 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
                 <button
                   disabled={outOfStock}
                   onClick={() => {
                     if (!product) return;
-                    if (stockTracked && quantity > stockValue) {
+                    if (stockTracked && purchaseQuantity > stockValue) {
                       addToast(t('product.toast.max_stock', { qty: stockValue }), 'warning');
                       setQuantity(Math.max(1, stockValue));
                       return;
@@ -530,9 +534,11 @@ if (product.donation) {
   if (
     !/^\d+(\.\d{1,2})?$/.test(donationAmount.trim()) ||
     !Number.isFinite(amount) ||
-    amount < Math.max(1, product.price)
+    !Number.isFinite(minimumDonation) ||
+    !Number.isSafeInteger(Math.round(amount * 100)) ||
+    amount < minimumDonation
   ) {
-    addToast('Please enter a valid payment amount of at least £1.00.', 'error');
+    addToast(`Please enter a valid payment amount of at least ${formatMoney(minimumDonation, currency)}.`, 'error');
     return;
   }
 }
@@ -542,7 +548,7 @@ const result = addItem(
   customFieldValues,
   product.server_options?.[0]?.id,
   'addtocart',
-  quantity,
+  purchaseQuantity,
   product.donation ? Number(donationAmount) : undefined
 );
 
@@ -550,7 +556,7 @@ const result = addItem(
                       addToast(t('cart.toast.subscription_conflict'), 'error');
                       return;
                     }
-                    addToast(t('product.toast.added_qty', { name: product.name, qty: quantity }), 'success');
+                    addToast(t('product.toast.added_qty', { name: product.name, qty: purchaseQuantity }), 'success');
                     setQuantity(1);
                   }}
                   className="btn-primary flex-1 py-4 text-base disabled:opacity-40 disabled:cursor-not-allowed"

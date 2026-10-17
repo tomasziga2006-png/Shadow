@@ -8,7 +8,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { getPool, getSetting, setSetting } from './db.js';
 
-const app = express();
+export const app = express();
 const PORT = Number(process.env.PORT || 8787);
 const TIP4SERV_BASE = 'https://api.tip4serv.com/v1';
 const JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'change-this-secret';
@@ -284,62 +284,118 @@ custom_fields: [
       }
       case 'checkout': {
         if (req.method !== 'POST') return jsonError(res, 405, 'POST method required for checkout');
-        if (!req.query.store) return jsonError(res, 400, 'store parameter is required');
-        
-const checkoutProducts = req.body?.products;
+        const storeId = Number(req.query.store);
+        if (!Number.isSafeInteger(storeId) || storeId < 1) {
+          return jsonError(res, 400, 'Invalid store identifier.');
+        }
 
-if (!Array.isArray(checkoutProducts) || checkoutProducts.length === 0) {
-  return jsonError(res, 400, 'Your cart is empty or invalid.');
-}
+        const checkoutProducts = req.body?.products;
+        if (!Array.isArray(checkoutProducts) || checkoutProducts.length === 0 || checkoutProducts.length > 50) {
+          return jsonError(res, 400, 'Your cart is empty or invalid.');
+        }
 
-for (const item of checkoutProducts) {
-  if (item.donation_amount === undefined) continue;
+        const checkoutUser = req.body?.user;
+        const email = checkoutUser?.email;
+        if (
+          !checkoutUser || typeof checkoutUser !== 'object' || Array.isArray(checkoutUser) ||
+          typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+        ) {
+          return jsonError(res, 400, 'A valid email address is required.');
+        }
 
-  const amount = item.donation_amount;
+        for (const item of checkoutProducts) {
+          if (!item || typeof item !== 'object' || Array.isArray(item)) {
+            return jsonError(res, 400, 'Invalid checkout item.');
+          }
+          if (
+            typeof item.product_slug !== 'string' || !item.product_slug ||
+            !Number.isSafeInteger(item.product_id) || item.product_id < 1 ||
+            !Number.isSafeInteger(item.quantity) || item.quantity < 1 || item.quantity > 100 ||
+            !['addtocart', 'subscribe'].includes(item.type)
+          ) {
+            return jsonError(res, 400, 'Invalid product or quantity.');
+          }
 
-  if (
-    typeof amount !== 'number' ||
-    !Number.isFinite(amount) ||
-    amount < 1 ||
-    Math.abs(amount * 100 - Math.round(amount * 100)) > 0.000001
-  ) {
-    return jsonError(res, 400, 'Invalid custom payment amount.');
-  }
-}
+          const product = await fetchTip4Serv(
+            `/store/product/${encodeURIComponent(item.product_slug)}?details=true`,
+            apiKey,
+          );
+          if (Number(product.id) !== item.product_id || product.status !== true) {
+            return jsonError(res, 400, 'Product is unavailable or invalid.');
+          }
 
-for (const item of checkoutProducts) {
-  if (typeof item.product_slug !== 'string' || !item.product_slug) {
-    return jsonError(res, 400, 'Invalid product.');
-  }
+          const isDonation = product.donation === true || product.donation === 1 || product.donation === '1';
+          if (isDonation) {
+            const amount = item.donation_amount;
+            const minimum = Math.max(1, Number(product.min_donation ?? product.price));
+            if (
+              item.type !== 'addtocart' || item.quantity !== 1 ||
+              !Number.isFinite(minimum) ||
+              typeof amount !== 'number' || !Number.isFinite(amount) ||
+              amount < minimum ||
+              !Number.isSafeInteger(Math.round(amount * 100)) ||
+              Math.abs(amount * 100 - Math.round(amount * 100)) > 0.000001
+            ) {
+              return jsonError(res, 400, 'Invalid custom payment amount or quantity.');
+            }
+          } else if (item.donation_amount !== undefined) {
+            return jsonError(res, 400, 'Custom amount not allowed for this product.');
+          }
 
-  const product = await fetchTip4Serv(
-    `/store/product/${encodeURIComponent(item.product_slug)}?details=true`,
-    apiKey
-  );
+          const customFields = item.custom_fields === undefined ? {} : item.custom_fields;
+          if (!customFields || typeof customFields !== 'object' || Array.isArray(customFields)) {
+            return jsonError(res, 400, 'Invalid custom field information.');
+          }
+          if (Object.values(customFields).some((value) =>
+            value !== null && typeof value !== 'string' && typeof value !== 'boolean' &&
+            !(typeof value === 'number' && Number.isFinite(value))
+          )) {
+            return jsonError(res, 400, 'Invalid custom field value.');
+          }
+          // For custom payments, validate required fields against Tip4Serv data, not the browser cart.
+          // Fixed-price products continue to use Tip4Serv's own field-validation rules.
+          for (const field of isDonation && Array.isArray(product.custom_fields) ? product.custom_fields : []) {
+            const required = field.required === true || field.required === 1 || field.required === '1';
+            if (!required) continue;
+            if (field.parent) {
+              const selected = customFields[String(field.parent.customFieldId)];
+              if (selected === undefined || selected === null) continue;
+              if (field.parent.optionId !== undefined && String(selected) !== String(field.parent.optionId)) continue;
+            }
+            const value = customFields[String(field.id)];
+            const empty = value === undefined || value === null || String(value).trim() === '';
+            const unchecked = field.type === 'checkbox' && ![true, 1, '1', 'true'].includes(value);
+            if (empty || unchecked) {
+              return jsonError(res, 400, `Required field missing: ${String(field.name || field.id)}`);
+            }
+          }
+        }
 
-  if (
-    Number(product.id) !== Number(item.product_id) ||
-    product.status !== true
-  ) {
-    return jsonError(res, 400, 'Product is unavailable or invalid.');
-  }
+        // product_slug is used only for our server-side product verification.
+        // Only fields supported by Tip4Serv are forwarded to its checkout API.
+        const tip4servBody = {
+          products: checkoutProducts.map((item) => {
+            const cleanItem = {
+              product_id: item.product_id,
+              type: item.type,
+              quantity: item.quantity,
+            };
+            for (const key of ['donation_amount', 'server_selection', 'custom_fields']) {
+              if (item[key] !== undefined) cleanItem[key] = item[key];
+            }
+            return cleanItem;
+          }),
+          user: { ...checkoutUser, email: email.trim() },
+        };
+        for (const key of ['redirect_success_checkout', 'redirect_canceled_checkout', 'redirect_pending_checkout']) {
+          if (typeof req.body[key] === 'string') tip4servBody[key] = req.body[key];
+        }
 
-  if (product.donation === true) {
-    const minimum = Number(product.min_donation ?? product.price);
-
-    if (
-      !Number.isFinite(minimum) ||
-      typeof item.donation_amount !== 'number' ||
-      item.donation_amount < minimum
-    ) {
-      return jsonError(res, 400, 'Invalid or missing custom payment amount.');
-    }
-  } else if (item.donation_amount !== undefined) {
-    return jsonError(res, 400, 'Custom amount not allowed for this product.');
-  }
-}
-
-        data = await postTip4Serv(`/store/checkout?store=${req.query.store}`, apiKey, req.body);
+        data = await postTip4Serv(
+          `/store/checkout?store=${encodeURIComponent(String(storeId))}`,
+          apiKey,
+          tip4servBody,
+        );
         break;
       }
       case 'servers':
@@ -463,6 +519,8 @@ if (existsSync(rootIndex) && existsSync(rootAssets)) {
   });
 }
 
-app.listen(PORT, () => {
-  console.log(`Shadow API listening on http://localhost:${PORT}`);
-});
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  app.listen(PORT, () => {
+    console.log(`Shadow API listening on http://localhost:${PORT}`);
+  });
+}

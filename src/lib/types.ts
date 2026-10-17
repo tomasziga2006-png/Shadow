@@ -35,6 +35,7 @@ export interface Product {
   quantity?: boolean;
   giftcard?: boolean;
   donation?: boolean;
+  min_donation?: number;
   server_choice?: boolean;
   server_options?: { id: number; name: string }[];
   custom_fields?: CustomField[];

@@ -33,7 +33,7 @@ export default function CheckoutPage() {
   const t = useT();
   usePageTitle(t('checkout.title'));
   const { user: tipUser } = useTip4ServAuth();
-  const [requiredIdentifiers, setRequiredIdentifiers] = useState<string[]>([]);
+  const [requiredIdentifiers, setRequiredIdentifiers] = useState<string[]>(['email']);
   const [identifierValues, setIdentifierValues] = useState<Record<string, string>>({});
   const [autofilledFields, setAutofilledFields] = useState<Set<string>>(new Set());
   const [loadingInit, setLoadingInit] = useState(true);
@@ -138,9 +138,9 @@ const cartTotal = items.reduce((sum, item) => {
         if (!store?.id) return;
         const productIds = items.map((item) => Number(item.product.id));
         const ids = await getCheckoutIdentifiers(store.id, productIds);
-        setRequiredIdentifiers(ids);
+        setRequiredIdentifiers([...new Set(['email', ...ids])]);
       } catch {
-        setRequiredIdentifiers([]);
+        setRequiredIdentifiers(['email']);
       } finally {
         setLoadingInit(false);
       }
@@ -197,6 +197,12 @@ const cartTotal = items.reduce((sum, item) => {
 
     if (!store?.id) {
       addToast(t('checkout.toast.shop_unavailable'), 'error');
+      return;
+    }
+
+    const email = identifierValues.email?.trim() || '';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      addToast('Please enter a valid email address.', 'warning');
       return;
     }
 
@@ -287,7 +293,7 @@ const cartTotal = items.reduce((sum, item) => {
           product_id: Number(item.product.id),
           product_slug: item.product.slug,
           type: item.purchaseType || 'addtocart',
-          quantity: item.quantity,
+          quantity: item.product.donation ? 1 : item.quantity,
           
 donation_amount: item.product.donation ? item.donationAmount : undefined,
 
@@ -524,7 +530,7 @@ const unitPrice = (item.product.donation
 
                           <div className="mt-3 space-y-2">
                             <div className="flex items-center justify-between">
-                              {item.product.quantity ? (
+                              {item.product.quantity && !item.product.donation ? (
                                 <div className="flex items-center gap-2">
                                   <button
                                     onClick={() => updateQuantity(item.id, item.quantity - 1)}
