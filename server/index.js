@@ -226,6 +226,38 @@ for (const item of checkoutProducts) {
   }
 }
 
+for (const item of checkoutProducts) {
+  if (typeof item.product_slug !== 'string' || !item.product_slug) {
+    return jsonError(res, 400, 'Invalid product.');
+  }
+
+  const product = await fetchTip4Serv(
+    `/store/product/${encodeURIComponent(item.product_slug)}?details=true`,
+    apiKey
+  );
+
+  if (
+    Number(product.id) !== Number(item.product_id) ||
+    product.status !== true
+  ) {
+    return jsonError(res, 400, 'Product is unavailable or invalid.');
+  }
+
+  if (product.donation === true) {
+    const minimum = Number(product.min_donation ?? product.price);
+
+    if (
+      !Number.isFinite(minimum) ||
+      typeof item.donation_amount !== 'number' ||
+      item.donation_amount < minimum
+    ) {
+      return jsonError(res, 400, 'Invalid or missing custom payment amount.');
+    }
+  } else if (item.donation_amount !== undefined) {
+    return jsonError(res, 400, 'Custom amount not allowed for this product.');
+  }
+}
+
         data = await postTip4Serv(`/store/checkout?store=${req.query.store}`, apiKey, req.body);
         break;
       }
