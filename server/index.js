@@ -185,7 +185,14 @@ app.all('/api/tip4serv-proxy', async (req, res) => {
       category,
       created_date: 0,
       description: 'Test only. No real payments.',
-      custom_fields: [],
+      
+custom_fields: [
+  { id: 901, order: 1, name: 'Discord ID', type: 'text', marker: '', required: true },
+  { id: 902, order: 2, name: 'Discord Username', type: 'text', marker: '', required: true },
+  { id: 903, order: 3, name: 'Ticket ID', type: 'text', marker: '', required: true },
+  { id: 904, order: 4, name: 'Order Details', type: 'text', marker: '', required: true },
+],
+
     };
 
     switch (req.query.action) {
