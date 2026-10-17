@@ -26,6 +26,7 @@ export default function ProductDetailPage() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string | number>>({});
   const [quantity, setQuantity] = useState(1);
+  const [donationAmount, setDonationAmount] = useState('');
   const { addItem } = useCart();
   const { addToast } = useToast();
   const t = useT();
@@ -376,6 +377,26 @@ export default function ProductDetailPage() {
               </div>
             )}
 
+{product.donation && (
+  <div className="glass-card p-5 space-y-3">
+    <label className="block text-sm font-semibold text-heading">
+      Payment Amount (£)
+    </label>
+    <input
+      type="number"
+      min={product.price}
+      step="0.01"
+      value={donationAmount}
+      onChange={(e) => setDonationAmount(e.target.value)}
+      placeholder="Enter your payment amount..."
+      className="input-field"
+    />
+    <p className="text-xs text-volcanic-400">
+      Enter the amount agreed in your Discord ticket.
+    </p>
+  </div>
+)}
+
             {product.custom_fields && product.custom_fields.length > 0 && (
               <div className="glass-card p-5">
                 <div className="flex items-center gap-2 mb-5">
@@ -483,13 +504,29 @@ export default function ProductDetailPage() {
                       setQuantity(Math.max(1, stockValue));
                       return;
                     }
-                    const result = addItem(
-                      product,
-                      customFieldValues,
-                      product.server_options?.[0]?.id,
-                      'addtocart',
-                      quantity
-                    );
+
+if (product.donation) {
+  const amount = Number(donationAmount);
+
+  if (
+    !/^\d+(\.\d{1,2})?$/.test(donationAmount.trim()) ||
+    !Number.isFinite(amount) ||
+    amount < Math.max(1, product.price)
+  ) {
+    addToast('Please enter a valid payment amount of at least £1.00.', 'error');
+    return;
+  }
+}
+                   
+const result = addItem(
+  product,
+  customFieldValues,
+  product.server_options?.[0]?.id,
+  'addtocart',
+  quantity,
+  product.donation ? Number(donationAmount) : undefined
+);
+
                     if (!result.ok) {
                       addToast(t('cart.toast.subscription_conflict'), 'error');
                       return;
