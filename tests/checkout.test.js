@@ -1,10 +1,21 @@
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import http from 'node:http';
+import jwt from 'jsonwebtoken';
 import { after, before, beforeEach, describe, it, mock } from 'node:test';
 
 // Exercise the real Express route. Every upstream request is mocked; no database,
 // real API credential, external checkout, or payment provider is used.
+// A mock-only session, never a real customer token or production secret.
+const TEST_DISCORD_SESSION_SECRET = 'test_only_key_at_least_32_chars_and_never_a_real_secret';
+function checkoutCookie(expired = false) {
+  const token = jwt.sign({ kind: 'discord', id: '123456789012345678' }, TEST_DISCORD_SESSION_SECRET, {
+    algorithm: 'HS256', expiresIn: expired ? -10 : 3600,
+    issuer: 'santinocustomsv-shadow', audience: 'shadow-customer-login',
+  });
+  return `sc_discord_session=${token}`;
+}
+
 describe('checkout API', { concurrency: false }, () => {
   let server;
   let baseUrl;
@@ -26,11 +37,15 @@ describe('checkout API', { concurrency: false }, () => {
     };
   }
 
-  async function request(body = validBody(), { method = 'POST', store = '123', action = 'checkout' } = {}) {
+  async function request(body = validBody(), { method = 'POST', store = '123', action = 'checkout', session = 'valid' } = {}) {
     const url = new URL('/api/tip4serv-proxy', baseUrl);
     url.search = new URLSearchParams({ action, store });
+    const headers = { 'Content-Type': 'application/json' };
+    if (session === 'valid') headers.Cookie = checkoutCookie();
+    if (session === 'expired') headers.Cookie = checkoutCookie(true);
+    if (session === 'invalid') headers.Cookie = 'sc_discord_session=forged';
     return new Promise((resolve, reject) => {
-      const req = http.request(url, { method, headers: { 'Content-Type': 'application/json' } }, (res) => {
+      const req = http.request(url, { method, headers }, (res) => {
         let text = '';
         res.setEncoding('utf8');
         res.on('data', (chunk) => { text += chunk; });
@@ -42,9 +57,10 @@ describe('checkout API', { concurrency: false }, () => {
   }
 
   before(async () => {
-    for (const key of ['RAILWAY_ENVIRONMENT_NAME', 'TIP4SERV_API_KEY']) previousEnv[key] = process.env[key];
+    for (const key of ['RAILWAY_ENVIRONMENT_NAME', 'TIP4SERV_API_KEY', 'DISCORD_SESSION_SECRET']) previousEnv[key] = process.env[key];
     process.env.RAILWAY_ENVIRONMENT_NAME = 'production'; // Local route with all upstream traffic mocked.
     process.env.TIP4SERV_API_KEY = 'MOCK_ONLY_NO_REAL_KEY';
+    process.env.DISCORD_SESSION_SECRET = TEST_DISCORD_SESSION_SECRET;
     mock.method(globalThis, 'fetch', async (input, options = {}) => {
       const url = new URL(input);
       assert.equal(url.origin, 'https://api.tip4serv.com', 'Unexpected upstream host');
@@ -82,6 +98,15 @@ describe('checkout API', { concurrency: false }, () => {
       else process.env[key] = value;
     }
   });
+
+  for (const session of ['none', 'invalid', 'expired']) {
+    it(`requires a valid Discord session (${session}) before contacting Tip4Serv`, async () => {
+      const result = await request(validBody(), { session });
+      assert.equal(result.status, 401);
+      assert.match(result.body.error, /log in with Discord/i);
+      assert.equal(upstreamCalls.length, 0);
+    });
+  }
 
   it('forwards a 35.50 custom payment with trimmed email and an allowlisted payload', async () => {
     const body = validBody();

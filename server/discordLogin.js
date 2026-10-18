@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 
 const COOKIE_NAME = 'sc_discord_session';
 const STATE_COOKIE = 'sc_discord_oauth_state';
+const DESTINATION_COOKIE = 'sc_discord_oauth_destination';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const STATE_TTL_MS = 10 * 60 * 1000;
 const ISSUER = 'santinocustomsv-shadow';
@@ -49,12 +50,42 @@ function publicUser(discordUser) {
   };
 }
 
+function verifiedSession(req, sessionSecret) {
+  const session = jwt.verify(cookie(req, COOKIE_NAME), sessionSecret, {
+    algorithms: ['HS256'], issuer: ISSUER, audience: AUDIENCE,
+  });
+  if (session.kind !== 'discord' || !/^\d{17,20}$/.test(String(session.id || ''))) {
+    throw new Error('Invalid Discord session');
+  }
+  return session;
+}
+
+// Only a valid signed Discord session can initiate a payment checkout.
+// Do not trust a Discord ID supplied in the checkout request body.
+export function requireDiscordCheckout(req, res, next) {
+  const secret = process.env.DISCORD_SESSION_SECRET || '';
+  if (secret.length < 32) {
+    return res.status(503).json({ error: 'Discord login is temporarily unavailable.' });
+  }
+  try {
+    verifiedSession(req, secret);
+    return next();
+  } catch {
+    return res.status(401).json({ error: 'Please log in with Discord before checkout.' });
+  }
+}
+
 export function mountDiscordLogin(app) {
   app.get('/api/auth/discord/start', (req, res) => {
     const conf = config();
     if (!conf) return res.status(503).send('Discord login is not configured yet.');
     const state = randomBytes(24).toString('hex');
+    const destination = req.query.next === 'checkout' ? 'checkout' : 'account';
     res.cookie(STATE_COOKIE, state, {
+      httpOnly: true, secure: isSecure(), sameSite: 'lax',
+      maxAge: STATE_TTL_MS, path: '/api/auth/discord/callback',
+    });
+    res.cookie(DESTINATION_COOKIE, destination, {
       httpOnly: true, secure: isSecure(), sameSite: 'lax',
       maxAge: STATE_TTL_MS, path: '/api/auth/discord/callback',
     });
@@ -71,7 +102,9 @@ export function mountDiscordLogin(app) {
     const conf = config();
     if (!conf) return res.status(503).send('Discord login is not configured yet.');
     const expected = cookie(req, STATE_COOKIE);
+    const destination = cookie(req, DESTINATION_COOKIE);
     clearCookie(res, STATE_COOKIE, '/api/auth/discord/callback');
+    clearCookie(res, DESTINATION_COOKIE, '/api/auth/discord/callback');
     const supplied = String(req.query.state || '');
     if (!/^[0-9a-f]{48}$/.test(supplied) || !/^[0-9a-f]{48}$/.test(expected) ||
         !timingSafeEqual(Buffer.from(supplied), Buffer.from(expected))) {
@@ -111,7 +144,7 @@ export function mountDiscordLogin(app) {
         httpOnly: true, secure: isSecure(), sameSite: 'lax',
         maxAge: SESSION_TTL_MS, path: '/',
       });
-      return res.redirect(302, '/account');
+      return res.redirect(302, destination === 'checkout' ? '/checkout' : '/account');
     } catch {
       return res.status(502).send('Discord login temporarily unavailable. Please try again.');
     }
@@ -122,12 +155,7 @@ export function mountDiscordLogin(app) {
     const conf = config();
     if (!conf) return res.status(503).json({ error: 'Discord login is not configured.' });
     try {
-      const session = jwt.verify(cookie(req, COOKIE_NAME), conf.sessionSecret, {
-        algorithms: ['HS256'], issuer: ISSUER, audience: AUDIENCE,
-      });
-      if (session.kind !== 'discord' || !/^\d{17,20}$/.test(String(session.id || ''))) {
-        return res.status(401).json({ user: null });
-      }
+      const session = verifiedSession(req, conf.sessionSecret);
       return res.json({ user: {
         id: session.id,
         username: session.username,

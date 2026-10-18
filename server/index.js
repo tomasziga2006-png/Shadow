@@ -7,7 +7,7 @@ import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { getPool, getSetting, setSetting } from './db.js';
-import { mountDiscordLogin } from './discordLogin.js';
+import { mountDiscordLogin, requireDiscordCheckout } from './discordLogin.js';
 
 export const app = express();
 const PORT = Number(process.env.PORT || 8787);
@@ -155,7 +155,13 @@ app.put('/api/admin/settings', requireAdmin, async (req, res) => {
   res.json({ ok: true });
 });
 
-app.all('/api/tip4serv-proxy', async (req, res) => {
+app.all('/api/tip4serv-proxy', (req, res, next) => {
+  // Preserve staging's existing checkout-disabled response.
+  if (req.query.action !== 'checkout' || process.env.RAILWAY_ENVIRONMENT_NAME !== 'production') {
+    return next();
+  }
+  return requireDiscordCheckout(req, res, next);
+}, async (req, res) => {
   
   if (
     req.query.action === 'checkout' &&

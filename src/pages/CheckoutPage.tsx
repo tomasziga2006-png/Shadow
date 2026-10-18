@@ -9,6 +9,7 @@ import { usePageTitle } from '../lib/usePageTitle';
 import { computeExtrasPrice } from '../lib/pricing';
 import { getCheckoutIdentifiers, createCheckout } from '../lib/api';
 import { useTip4ServAuth } from '../lib/tip4servAuth';
+import { useDiscordAuth } from '../lib/discordAuth';
 import { formatMoney, isNiveauHidden, isNiveauField } from '../lib/utils';
 import type { CheckoutBody, CheckoutProduct, CheckoutUser } from '../lib/types';
 
@@ -33,6 +34,7 @@ export default function CheckoutPage() {
   const t = useT();
   usePageTitle(t('checkout.title'));
   const { user: tipUser } = useTip4ServAuth();
+  const { user: discordUser, ready: discordReady, loginToCheckout } = useDiscordAuth();
   const [requiredIdentifiers, setRequiredIdentifiers] = useState<string[]>(['email']);
   const [identifierValues, setIdentifierValues] = useState<Record<string, string>>({});
   const [autofilledFields, setAutofilledFields] = useState<Set<string>>(new Set());
@@ -190,6 +192,10 @@ const cartTotal = items.reduce((sum, item) => {
   }, [loadingInit, requiredIdentifiers.length]);
 
   const handleCheckout = useCallback(async () => {
+    if (!discordUser) {
+      loginToCheckout();
+      return;
+    }
     if (!acceptedTerms) {
       addToast(t('checkout.toast.accept_terms'), 'warning');
       return;
@@ -384,7 +390,41 @@ donation_amount: item.product.donation ? item.donationAmount : undefined,
       addToast(msg, 'error', 5000);
       setLoadingCheckout(false);
     }
-  }, [store, items, identifierValues, requiredIdentifiers, addToast, acceptedTerms, t]);
+  }, [store, items, identifierValues, requiredIdentifiers, addToast, acceptedTerms, t, discordUser, loginToCheckout]);
+
+  if (!discordReady) {
+    return (
+      <div className="pt-32 pb-16 text-center text-volcanic-400">
+        <Loader2 className="w-7 h-7 animate-spin mx-auto mb-4" />
+        Checking Discord sign-in...
+      </div>
+    );
+  }
+
+  if (!discordUser) {
+    return (
+      <div className="pt-32 pb-16">
+        <div className="max-w-md mx-auto px-4 text-center">
+          <div className="w-20 h-20 rounded-full bg-ark-600/15 flex items-center justify-center mx-auto mb-6">
+            <ShieldCheck className="w-10 h-10 text-ark-500" />
+          </div>
+          <h1 className="text-2xl font-bold text-heading mb-3">Log in with Discord to checkout</h1>
+          <p className="text-volcanic-400 mb-8">
+            A Discord account is required to make a purchase at SantinoCustomsV.
+            Your shopping cart will stay here while you sign in.
+          </p>
+          <button onClick={loginToCheckout} className="btn-primary px-7 py-3">
+            Log in with Discord
+          </button>
+          <div className="mt-6">
+            <Link to="/products" className="text-sm text-volcanic-400 hover:text-heading">
+              Continue shopping
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isRedirecting) {
     return (

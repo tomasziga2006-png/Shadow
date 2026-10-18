@@ -11,11 +11,12 @@ interface DiscordAuthValue {
   user: DiscordUser | null;
   ready: boolean;
   login: () => void;
+  loginToCheckout: () => void;
   logout: () => Promise<void>;
 }
 
 const DiscordAuthContext = createContext<DiscordAuthValue>({
-  user: null, ready: false, login: () => {}, logout: async () => {},
+  user: null, ready: false, login: () => {}, loginToCheckout: () => {}, logout: async () => {},
 });
 
 export function DiscordAuthProvider({ children }: { children: ReactNode }) {
@@ -34,6 +35,9 @@ export function DiscordAuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(() => {
     window.location.assign('/api/auth/discord/start');
   }, []);
+  const loginToCheckout = useCallback(() => {
+    window.location.assign('/api/auth/discord/start?next=checkout');
+  }, []);
   const logout = useCallback(async () => {
     try {
       const res = await fetch('/api/auth/discord/logout', { method: 'POST', credentials: 'same-origin' });
@@ -44,7 +48,7 @@ export function DiscordAuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
   return (
-    <DiscordAuthContext.Provider value={{ user, ready, login, logout }}>
+    <DiscordAuthContext.Provider value={{ user, ready, login, loginToCheckout, logout }}>
       {children}
     </DiscordAuthContext.Provider>
   );
