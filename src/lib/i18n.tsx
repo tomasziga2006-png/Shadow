@@ -641,12 +641,7 @@ const LanguageContext = createContext<Ctx | undefined>(undefined);
 const STORAGE_KEY = 'app.language';
 
 function detectInitial(): Language {
-  if (typeof window === 'undefined') return 'fr';
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  if (stored === 'fr' || stored === 'en') return stored;
-  const nav = window.navigator?.language?.toLowerCase() || '';
-  if (nav.startsWith('en')) return 'en';
-  return 'fr';
+  return 'en';
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
@@ -661,7 +656,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, [lang]);
 
-  const setLang = (l: Language) => setLangState(l);
+  const setLang = (_l: Language) => setLangState('en');
 
   const t = (key: string, vars?: Record<string, string | number>) => {
     const dict = dictionaries[lang];
