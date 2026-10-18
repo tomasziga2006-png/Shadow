@@ -5,7 +5,7 @@ import { useCart } from '../../lib/cart';
 import { useStore } from '../../lib/store';
 import { useTheme } from '../../lib/theme';
 import { useLanguage } from '../../lib/i18n';
-import { useTip4ServAuth } from '../../lib/tip4servAuth';
+import { useDiscordAuth } from '../../lib/discordAuth';
 import { getCategories } from '../../lib/api';
 import { getCategoryIcon } from '../../lib/categoryIcons';
 import { stripHtml } from '../../lib/utils';
@@ -25,7 +25,7 @@ export default function Header() {
   const { store } = useStore();
   const { theme, toggleTheme } = useTheme();
   const { t } = useLanguage();
-  const { token: authToken, user: authUser, ready: authReady, connect: authConnect, logout: authLogout } = useTip4ServAuth();
+  const { user: authUser, ready: authReady, login: authConnect, logout: authLogout } = useDiscordAuth();
   const storeName = store?.title || 'ARK Shop';
   const menuLinks = store?.menu_links ?? [];
 
@@ -189,7 +189,7 @@ export default function Header() {
           </div>
 
           <div className="flex items-center gap-1.5">
-            {authToken && authUser ? (
+            {authUser ? (
               <div ref={userRef} className="relative hidden md:block">
                 <button
                   onClick={() => setUserOpen((v) => !v)}
@@ -198,22 +198,19 @@ export default function Header() {
                   aria-expanded={userOpen}
                 >
                   <span className="w-7 h-7 rounded-full overflow-hidden bg-volcanic-800 border border-volcanic-700/40 flex items-center justify-center shrink-0">
-                    {authUser.profile_picture ? (
-                      <img src={authUser.profile_picture} alt={authUser.username || ''} className="w-full h-full object-cover" />
+                    {authUser.avatar_url ? (
+                      <img src={authUser.avatar_url} alt={authUser.username || ''} className="w-full h-full object-cover" />
                     ) : (
                       <UserIcon className="w-3.5 h-3.5 text-volcanic-400" />
                     )}
                   </span>
-                  <span className="max-w-[120px] truncate">{authUser.username || authUser.email || 'Account'}</span>
+                  <span className="max-w-[120px] truncate">{authUser.username || 'Discord Account'}</span>
                   <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${userOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {userOpen && (
                   <div className="absolute top-full right-0 mt-2 w-60 bg-volcanic-900/95 backdrop-blur-2xl border border-volcanic-800/60 rounded-xl shadow-2xl shadow-black/40 overflow-hidden animate-fade-in-down p-1.5 z-50">
                     <div className="px-3 py-2.5 border-b border-volcanic-800/60 mb-1">
-                      <p className="text-sm font-semibold text-heading truncate">{authUser.username || 'My Account'}</p>
-                      {authUser.email && (
-                        <p className="text-xs text-volcanic-500 truncate">{authUser.email}</p>
-                      )}
+                      <p className="text-sm font-semibold text-heading truncate">{authUser.username || 'Discord Account'}</p>
                     </div>
                     <Link
                       to="/account"
@@ -223,7 +220,7 @@ export default function Header() {
                       My Profile
                     </Link>
                     <Link
-                      to="/account?tab=subscriptions"
+                      to="/tip4serv-account?tab=subscriptions"
                       className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-volcanic-200 hover:text-heading hover:bg-volcanic-800/60 transition-colors"
                     >
                       <Repeat className="w-4 h-4" />
@@ -249,7 +246,7 @@ export default function Header() {
                 className="hidden md:inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-volcanic-300 hover:text-heading hover:bg-volcanic-800/60 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <LogIn className="w-4 h-4" />
-                <span>{t('header.login')}</span>
+                <span>Log in with Discord</span>
               </button>
             )}
 
@@ -324,7 +321,7 @@ export default function Header() {
                 </a>
               ))}
 
-              {authToken && authUser ? (
+              {authUser ? (
                 <>
                   <Link
                     to="/account"
@@ -355,7 +352,7 @@ export default function Header() {
                   className="w-full flex items-center gap-2.5 px-4 py-3 rounded-lg text-sm font-medium text-volcanic-300 hover:text-heading hover:bg-volcanic-800/40 transition-all duration-200 disabled:opacity-50"
                 >
                   <LogIn className="w-4 h-4" />
-                  {t('header.login')}
+                  Log in with Discord
                 </button>
               )}
 

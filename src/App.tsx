@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { CartProvider } from './lib/cart';
 import { StoreProvider } from './lib/store';
 import { Tip4ServAuthProvider } from './lib/tip4servAuth';
+import { DiscordAuthProvider } from './lib/discordAuth';
 import { ThemeProvider } from './lib/theme';
 import { ToastProvider } from './lib/toast';
 import { LanguageProvider } from './lib/i18n';
@@ -16,6 +17,7 @@ import CheckoutPage from './pages/CheckoutPage';
 import CheckoutSuccessPage from './pages/CheckoutSuccessPage';
 import CheckoutCanceledPage from './pages/CheckoutCanceledPage';
 import AccountPage from './pages/AccountPage';
+import DiscordAccountPage from './pages/DiscordAccountPage';
 import DiscordOAuthCallbackPage from './pages/DiscordOAuthCallbackPage';
 import AdminPage from './pages/AdminPage';
 
@@ -27,7 +29,8 @@ export default function App() {
         <ToastProvider>
           <StoreProvider>
             <Tip4ServAuthProvider>
-              <CartProvider>
+              <DiscordAuthProvider>
+                <CartProvider>
                 <div className="min-h-screen flex flex-col">
                   <Header />
                   <main className="flex-1">
@@ -38,7 +41,8 @@ export default function App() {
                       <Route path="/checkout" element={<CheckoutPage />} />
                       <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
                       <Route path="/checkout/canceled" element={<CheckoutCanceledPage />} />
-                      <Route path="/account" element={<AccountPage />} />
+                      <Route path="/account" element={<DiscordAccountPage />} />
+                      <Route path="/tip4serv-account" element={<AccountPage />} />
                       <Route path="/auth/discord/callback" element={<DiscordOAuthCallbackPage />} />
                       <Route path="/admin" element={<AdminPage />} />
                     </Routes>
@@ -47,7 +51,8 @@ export default function App() {
                   <CartDrawer />
                   <ToastContainer />
                 </div>
-              </CartProvider>
+                </CartProvider>
+              </DiscordAuthProvider>
             </Tip4ServAuthProvider>
           </StoreProvider>
         </ToastProvider>

@@ -7,6 +7,7 @@ import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { getPool, getSetting, setSetting } from './db.js';
+import { mountDiscordLogin } from './discordLogin.js';
 
 export const app = express();
 const PORT = Number(process.env.PORT || 8787);
@@ -21,6 +22,7 @@ const rootAssets = path.join(appRoot, 'assets');
 
 app.use(cors({ origin: process.env.CORS_ORIGIN || true, credentials: true }));
 app.use(express.json({ limit: '1mb' }));
+mountDiscordLogin(app);
 
 function jsonError(res, status, message) {
   return res.status(status).json({ error: message });
