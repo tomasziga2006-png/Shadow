@@ -1,106 +1,118 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { CircleCheck as CheckCircle, Server, ShoppingBag, Clock, Shield } from 'lucide-react';
-import { useT } from '../lib/i18n';
+import {
+  CircleCheck as CheckCircle,
+  Download,
+  PackageCheck,
+  Headset,
+  Receipt,
+  ShoppingBag,
+} from 'lucide-react';
+import { useLanguage } from '../lib/i18n';
 import { useCart } from '../lib/cart';
 import { usePageTitle } from '../lib/usePageTitle';
 
+const messages = {
+  en: {
+    title: 'Thank you for your order!',
+    subtitle: 'Your checkout is complete. Here is how to access your purchase.',
+    premadeTitle: 'Premade FiveM packages',
+    premadeBody: 'Your files are available to download from your Tip4Serv order confirmation. You can also check your account for purchase details.',
+    customTitle: 'Custom orders',
+    customBody: 'Custom clothing, chains, GFX and other made-to-order work are delivered through your Discord ticket. Keep your ticket open until your order is completed.',
+    supportTitle: 'Need assistance?',
+    supportBody: 'If you have trouble accessing a download or have a question about a custom order, contact our support team through Discord.',
+    emailNote: 'Tip4Serv may also send order information by email. If you do not receive a message, check your order confirmation or account.',
+    purchases: 'View My Purchases',
+    shopping: 'Continue Shopping',
+    loginNote: 'Sign in with Tip4Serv to view your purchase history.',
+  },
+  fr: {
+    title: 'Merci pour votre commande !',
+    subtitle: 'Votre commande est terminée. Voici comment accéder à votre achat.',
+    premadeTitle: 'Packs FiveM prêts à télécharger',
+    premadeBody: 'Vos fichiers sont disponibles depuis la confirmation de commande Tip4Serv. Vous pouvez également consulter les détails de vos achats dans votre compte.',
+    customTitle: 'Commandes personnalisées',
+    customBody: 'Les vêtements, chaînes, créations GFX et autres réalisations personnalisées sont livrés via votre ticket Discord. Gardez ce ticket ouvert jusqu’à la livraison.',
+    supportTitle: 'Besoin d’aide ?',
+    supportBody: 'Si vous ne parvenez pas à télécharger un fichier ou si vous avez une question sur une commande personnalisée, contactez notre équipe sur Discord.',
+    emailNote: 'Tip4Serv peut aussi envoyer des informations par e-mail. Si vous ne recevez rien, consultez votre confirmation de commande ou votre compte.',
+    purchases: 'Voir mes achats',
+    shopping: 'Continuer mes achats',
+    loginNote: 'Connectez-vous avec Tip4Serv pour consulter votre historique d’achats.',
+  },
+};
+
 export default function CheckoutSuccessPage() {
-  const t = useT();
+  const { lang } = useLanguage();
+  const copy = messages[lang];
   const { clearCart } = useCart();
-  usePageTitle(t('checkout_success.title'));
+  usePageTitle(copy.title);
 
   useEffect(() => {
     clearCart();
   }, [clearCart]);
+
+  const sections = [
+    { icon: Download, title: copy.premadeTitle, body: copy.premadeBody },
+    { icon: PackageCheck, title: copy.customTitle, body: copy.customBody },
+    { icon: Headset, title: copy.supportTitle, body: copy.supportBody },
+  ];
+
   return (
     <div className="pt-32 pb-16 animate-fade-in">
       <div className="max-w-2xl mx-auto px-4">
         <div className="text-center mb-10">
           <div className="relative inline-flex items-center justify-center mb-6">
-            <div className="absolute inset-0 w-24 h-24 rounded-full bg-emerald-500/20 animate-ping" style={{ animationDuration: '2s' }} />
             <div className="relative w-24 h-24 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
               <CheckCircle className="w-12 h-12 text-emerald-400" />
             </div>
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-heading mb-3">
-            {t('checkout_success.title')}
+            {copy.title}
           </h1>
           <p className="text-lg text-volcanic-300 max-w-md mx-auto">
-            {t('checkout_success.subtitle')}
+            {copy.subtitle}
           </p>
         </div>
 
-        <div className="bg-volcanic-900/60 border border-volcanic-800/60 rounded-2xl p-6 sm:p-8 mb-8">
-          <div className="flex items-start gap-4 mb-6">
-            <div className="w-12 h-12 rounded-xl bg-ark-600/15 border border-ark-600/30 flex items-center justify-center flex-shrink-0">
-              <Server className="w-6 h-6 text-ark-500" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-heading mb-1">
-                {t('checkout_success.delivery.title')}
-              </h2>
-              <p className="text-volcanic-300 text-sm leading-relaxed">
-                {t('checkout_success.delivery.body')}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="flex items-center gap-3 bg-volcanic-800/40 rounded-xl p-4">
-              <Clock className="w-5 h-5 text-amber-400 flex-shrink-0" />
+        <div className="bg-volcanic-900/60 border border-volcanic-800/60 rounded-2xl p-6 sm:p-8 mb-6 space-y-6">
+          {sections.map(({ icon: Icon, title, body }) => (
+            <div key={title} className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-ark-600/15 border border-ark-600/30 flex items-center justify-center flex-shrink-0">
+                <Icon className="w-6 h-6 text-ark-500" />
+              </div>
               <div>
-                <p className="text-sm font-medium text-heading">{t('checkout_success.timing.title')}</p>
-                <p className="text-xs text-volcanic-400">
-                  {t('checkout_success.timing.body')}
-                </p>
+                <h2 className="text-lg font-semibold text-heading mb-1">{title}</h2>
+                <p className="text-volcanic-300 text-sm leading-relaxed">{body}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 bg-volcanic-800/40 rounded-xl p-4">
-              <Shield className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-heading">{t('checkout_success.security.title')}</p>
-                <p className="text-xs text-volcanic-400">
-                  {t('checkout_success.security.body')}
-                </p>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
 
-        <div className="bg-volcanic-900/40 border border-volcanic-800/40 rounded-2xl p-5 mb-8">
-          <h3 className="text-sm font-semibold text-heading mb-3">{t('checkout_success.howto.title')}</h3>
-          <ol className="space-y-3">
-            <li className="flex items-start gap-3">
-              <span className="w-6 h-6 rounded-full bg-ark-600/20 text-ark-500 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
-              <p className="text-sm text-volcanic-300">
-                {t('checkout_success.howto.step1')}
-              </p>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="w-6 h-6 rounded-full bg-ark-600/20 text-ark-500 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
-              <p className="text-sm text-volcanic-300">
-                {t('checkout_success.howto.step2')}
-              </p>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="w-6 h-6 rounded-full bg-ark-600/20 text-ark-500 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
-              <p className="text-sm text-volcanic-300">
-                {t('checkout_success.howto.step3')}
-              </p>
-            </li>
-          </ol>
-        </div>
+        <p className="text-xs text-volcanic-400 text-center mb-8">
+          {copy.emailNote}
+        </p>
 
-        <div className="text-center">
+        <div className="flex flex-col sm:flex-row items-stretch justify-center gap-3">
+          <Link
+            to="/account?tab=payments"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-ark-600 hover:bg-ark-500 text-white font-semibold rounded-xl transition-colors"
+          >
+            <Receipt className="w-4 h-4" />
+            {copy.purchases}
+          </Link>
           <Link
             to="/products"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-ark-600 hover:bg-ark-500 text-white font-semibold rounded-xl transition-colors"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-volcanic-700 text-heading hover:bg-volcanic-800/60 font-semibold rounded-xl transition-colors"
           >
             <ShoppingBag className="w-4 h-4" />
-            {t('checkout_success.back_to_shop')}
+            {copy.shopping}
           </Link>
         </div>
+        <p className="text-center text-xs text-volcanic-500 mt-4">
+          {copy.loginNote}
+        </p>
       </div>
     </div>
   );
