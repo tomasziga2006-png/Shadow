@@ -20,7 +20,7 @@ export default function ProductCard({ product, index = 0 }: Props) {
                 product.name?.toLowerCase().includes('nouveau') ||
                 (product.id && product.id > 9000);
 
-  const stockTracked = typeof product.stock === 'number';
+  const stockTracked = product.enable_stock === true && typeof product.stock === 'number';
   const outOfStock = stockTracked && (product.stock ?? 0) <= 0;
   const lowStock = stockTracked && !outOfStock && (product.stock ?? 0) <= 5;
 
