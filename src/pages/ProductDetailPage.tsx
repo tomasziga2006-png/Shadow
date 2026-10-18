@@ -100,7 +100,7 @@ export default function ProductDetailPage() {
     return computeExtrasPrice(product?.custom_fields, customFieldValues);
   }, [product, customFieldValues]);
 
-  const stockTracked = typeof product?.stock === 'number';
+  const stockTracked = product?.enable_stock === true && typeof product.stock === 'number';
   const stockValue = product?.stock ?? 0;
   const outOfStock = stockTracked && stockValue <= 0;
   const lowStock = stockTracked && !outOfStock && stockValue <= 5;
