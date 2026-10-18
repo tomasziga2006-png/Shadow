@@ -2,12 +2,10 @@ import { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
-  CreditCard,
   Repeat,
   User as UserIcon,
   Loader as Loader2,
   CircleAlert as AlertCircle,
-  ExternalLink,
   CircleCheck as CheckCircle2,
   CircleX as XCircle,
   Clock,
@@ -19,10 +17,8 @@ import {
 } from 'lucide-react';
 import {
   useTip4ServAuth,
-  fetchUserPayments,
   fetchUserSubscriptions,
   unsubscribeUserSubscription,
-  type Tip4ServPayment,
   type Tip4ServSubscription,
 } from '../lib/tip4servAuth';
 import { useToast } from '../lib/toast';
@@ -30,7 +26,7 @@ import { useT } from '../lib/i18n';
 import { usePageTitle } from '../lib/usePageTitle';
 import { formatMoney } from '../lib/utils';
 
-type TabKey = 'profile' | 'payments' | 'subscriptions';
+type TabKey = 'profile' | 'subscriptions';
 
 function formatDate(ts: number): string {
   if (!ts) return '—';
@@ -76,7 +72,7 @@ export default function AccountPage() {
   usePageTitle(t('account.title_default'));
   const initialTab = ((): TabKey => {
     const tp = searchParams.get('tab');
-    return tp === 'payments' || tp === 'subscriptions' ? tp : 'profile';
+    return tp === 'subscriptions' ? tp : 'profile';
   })();
   const [tab, setTab] = useState<TabKey>(initialTab);
 
@@ -89,27 +85,10 @@ export default function AccountPage() {
     else next.delete('tab');
     setSearchParams(next, { replace: true });
   }, [tab, searchParams, setSearchParams]);
-  const [payments, setPayments] = useState<Tip4ServPayment[] | null>(null);
-  const [paymentsErr, setPaymentsErr] = useState<string | null>(null);
-  const [paymentsLoading, setPaymentsLoading] = useState(false);
   const [subs, setSubs] = useState<Tip4ServSubscription[] | null>(null);
   const [subsErr, setSubsErr] = useState<string | null>(null);
   const [subsLoading, setSubsLoading] = useState(false);
   const [unsubBusy, setUnsubBusy] = useState<number | null>(null);
-
-  const loadPayments = useCallback(async () => {
-    if (!token) return;
-    setPaymentsLoading(true);
-    setPaymentsErr(null);
-    try {
-      const r = await fetchUserPayments(token);
-      setPayments(r.payments || []);
-    } catch (e) {
-      setPaymentsErr(e instanceof Error ? e.message : String(e));
-    } finally {
-      setPaymentsLoading(false);
-    }
-  }, [token]);
 
   const loadSubs = useCallback(async () => {
     if (!token) return;
@@ -127,15 +106,13 @@ export default function AccountPage() {
 
   useEffect(() => {
     if (!token) return;
-    if (tab === 'payments') loadPayments();
     if (tab === 'subscriptions') loadSubs();
-  }, [token, tab, loadPayments, loadSubs]);
+  }, [token, tab, loadSubs]);
 
   useEffect(() => {
     if (!token) return;
     const onFocus = () => {
-      if (tab === 'payments') loadPayments();
-      else if (tab === 'subscriptions') loadSubs();
+      if (tab === 'subscriptions') loadSubs();
     };
     const onVisibility = () => {
       if (document.visibilityState === 'visible') onFocus();
@@ -146,7 +123,7 @@ export default function AccountPage() {
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [token, tab, loadPayments, loadSubs]);
+  }, [token, tab, loadSubs]);
 
   const handleUnsubscribe = useCallback(
     async (subscriptionId: number) => {
@@ -211,7 +188,6 @@ export default function AccountPage() {
 
   const tabs: { key: TabKey; label: string; icon: typeof UserIcon }[] = [
     { key: 'profile', label: t('account.tabs.profile'), icon: UserIcon },
-    { key: 'payments', label: t('account.tabs.payments'), icon: CreditCard },
     { key: 'subscriptions', label: t('account.tabs.subscriptions'), icon: Repeat },
   ];
 
@@ -313,15 +289,6 @@ export default function AccountPage() {
           </div>
         )}
 
-        {tab === 'payments' && (
-          <PaymentsPanel
-            loading={paymentsLoading}
-            error={paymentsErr}
-            payments={payments}
-            onRefresh={loadPayments}
-          />
-        )}
-
         {tab === 'subscriptions' && (
           <SubscriptionsPanel
             loading={subsLoading}
@@ -384,90 +351,6 @@ function RefreshButton({ onClick, loading }: { onClick: () => void; loading: boo
       <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
       {t('account.refresh')}
     </button>
-  );
-}
-
-function PaymentsPanel({
-  loading,
-  error,
-  payments,
-  onRefresh,
-}: {
-  loading: boolean;
-  error: string | null;
-  payments: Tip4ServPayment[] | null;
-  onRefresh: () => void;
-}) {
-  const t = useT();
-  const header = (
-    <div className="flex justify-end mb-3">
-      <RefreshButton onClick={onRefresh} loading={loading} />
-    </div>
-  );
-  if (loading && !payments) return <LoadingPanel label={t('account.payments.loading')} />;
-  if (error) return <><>{header}</><ErrorState message={error} /></>;
-  if (!payments || payments.length === 0) {
-    return (
-      <>
-        {header}
-        <EmptyState
-          icon={CreditCard}
-          title={t('account.payments.empty.title')}
-          description={t('account.payments.empty.description')}
-        />
-      </>
-    );
-  }
-
-  return (
-    <div>
-      {header}
-      <div className="space-y-3">
-      {payments.map((p) => (
-        <article key={p.id} className="glass-card p-5 hover:border-ark-600/30 transition-colors">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                <span className="text-xs text-volcanic-500 font-mono">#{p.id}</span>
-                <StatusPill status={p.status} unknownLabel={t('account.status.unknown')} />
-                {p.gateway && (
-                  <span className="text-[11px] uppercase tracking-wider text-volcanic-500 font-semibold">
-                    {p.gateway}
-                  </span>
-                )}
-              </div>
-              <h3 className="text-heading font-semibold truncate">{p.cart || t('account.payments.order_default')}</h3>
-              <div className="text-xs text-volcanic-500 mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="inline-flex items-center gap-1">
-                  <CalendarDays className="w-3.5 h-3.5" />
-                  {formatDate(p.date)}
-                </span>
-                {p.identifier && <span className="truncate">{t('account.payments.delivered_to')} {p.identifier}</span>}
-              </div>
-            </div>
-            <div className="flex items-center gap-3 shrink-0">
-              <div className="text-right">
-                <div className="text-xl font-bold text-heading">
-                  {formatMoney(p.amount, p.currency)}
-                </div>
-              </div>
-              {p.details_page && (
-                <a
-                  href={p.details_page}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-volcanic-300 hover:text-heading bg-volcanic-800/40 hover:bg-volcanic-800/70 border border-volcanic-800/50 transition-colors"
-                >
-                  {t('account.payments.details')}
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              )}
-            </div>
-          </div>
-        </article>
-      ))}
-      </div>
-    </div>
   );
 }
 

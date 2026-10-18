@@ -5,7 +5,6 @@ import {
   Download,
   PackageCheck,
   Headset,
-  Receipt,
   ShoppingBag,
 } from 'lucide-react';
 import { useLanguage } from '../lib/i18n';
@@ -17,29 +16,25 @@ const messages = {
     title: 'Thank you for your order!',
     subtitle: 'Your checkout is complete. Here is how to access your purchase.',
     premadeTitle: 'Premade FiveM packages',
-    premadeBody: 'Your files are available to download from your Tip4Serv order confirmation. You can also check your account for purchase details.',
+    premadeBody: 'Your files are available from the download link on your Tip4Serv order confirmation. Save that page so you can access your files.',
     customTitle: 'Custom orders',
     customBody: 'Custom clothing, chains, GFX and other made-to-order work are delivered through your Discord ticket. Keep your ticket open until your order is completed.',
     supportTitle: 'Need assistance?',
     supportBody: 'If you have trouble accessing a download or have a question about a custom order, contact our support team through Discord.',
-    emailNote: 'Tip4Serv may also send order information by email. If you do not receive a message, check your order confirmation or account.',
-    purchases: 'View My Purchases',
+    emailNote: 'Look out for a Tip4Serv order-confirmation email and check your spam folder if it does not arrive. Premade downloads are also available on your order confirmation page.',
     shopping: 'Continue Shopping',
-    loginNote: 'Sign in with Tip4Serv to view your purchase history.',
   },
   fr: {
     title: 'Merci pour votre commande !',
     subtitle: 'Votre commande est terminée. Voici comment accéder à votre achat.',
     premadeTitle: 'Packs FiveM prêts à télécharger',
-    premadeBody: 'Vos fichiers sont disponibles depuis la confirmation de commande Tip4Serv. Vous pouvez également consulter les détails de vos achats dans votre compte.',
+    premadeBody: 'Vous pouvez télécharger vos fichiers depuis la page de confirmation de commande Tip4Serv. Conservez ce lien pour retrouver vos fichiers.',
     customTitle: 'Commandes personnalisées',
     customBody: 'Les vêtements, chaînes, créations GFX et autres réalisations personnalisées sont livrés via votre ticket Discord. Gardez ce ticket ouvert jusqu’à la livraison.',
     supportTitle: 'Besoin d’aide ?',
     supportBody: 'Si vous ne parvenez pas à télécharger un fichier ou si vous avez une question sur une commande personnalisée, contactez notre équipe sur Discord.',
-    emailNote: 'Tip4Serv peut aussi envoyer des informations par e-mail. Si vous ne recevez rien, consultez votre confirmation de commande ou votre compte.',
-    purchases: 'Voir mes achats',
+    emailNote: 'Vérifiez votre boîte mail pour la confirmation Tip4Serv et votre dossier spam si nécessaire. Les téléchargements sont également disponibles depuis votre page de confirmation.',
     shopping: 'Continuer mes achats',
-    loginNote: 'Connectez-vous avec Tip4Serv pour consulter votre historique d’achats.',
   },
 };
 
@@ -96,23 +91,13 @@ export default function CheckoutSuccessPage() {
 
         <div className="flex flex-col sm:flex-row items-stretch justify-center gap-3">
           <Link
-            to="/account?tab=payments"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-ark-600 hover:bg-ark-500 text-white font-semibold rounded-xl transition-colors"
-          >
-            <Receipt className="w-4 h-4" />
-            {copy.purchases}
-          </Link>
-          <Link
             to="/products"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-volcanic-700 text-heading hover:bg-volcanic-800/60 font-semibold rounded-xl transition-colors"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-ark-600 hover:bg-ark-500 text-white font-semibold rounded-xl transition-colors"
           >
             <ShoppingBag className="w-4 h-4" />
             {copy.shopping}
           </Link>
         </div>
-        <p className="text-center text-xs text-volcanic-500 mt-4">
-          {copy.loginNote}
-        </p>
       </div>
     </div>
   );

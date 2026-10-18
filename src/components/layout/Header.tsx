@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, ShoppingCart, Gamepad2, Sun, Moon, ChevronDown, LayoutGrid, House as Home, Package, ExternalLink, LogIn, Link2, User as UserIcon, CreditCard, Repeat, LogOut } from 'lucide-react';
+import { Menu, X, ShoppingCart, Gamepad2, Sun, Moon, ChevronDown, LayoutGrid, House as Home, Package, ExternalLink, LogIn, Link2, User as UserIcon, Repeat, LogOut } from 'lucide-react';
 import { useCart } from '../../lib/cart';
 import { useStore } from '../../lib/store';
 import { useTheme } from '../../lib/theme';
@@ -221,13 +221,6 @@ export default function Header() {
                     >
                       <UserIcon className="w-4 h-4" />
                       My Profile
-                    </Link>
-                    <Link
-                      to="/account?tab=payments"
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-volcanic-200 hover:text-heading hover:bg-volcanic-800/60 transition-colors"
-                    >
-                      <CreditCard className="w-4 h-4" />
-                      My Payments
                     </Link>
                     <Link
                       to="/account?tab=subscriptions"
