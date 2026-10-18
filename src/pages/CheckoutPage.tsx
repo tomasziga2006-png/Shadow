@@ -164,7 +164,7 @@ const cartTotal = items.reduce((sum, item) => {
         if (next[id]?.trim()) continue;
         let value: string | undefined;
         if (id === 'email' && tipUser.email) value = tipUser.email;
-        else if ((id === 'minecraft_username' || id === 'ingame_username' || id === 'rust_username') && tipUser.username) {
+        else if ((id === 'username' || id === 'minecraft_username' || id === 'ingame_username' || id === 'rust_username') && tipUser.username) {
           value = tipUser.username;
         }
         if (value) {
